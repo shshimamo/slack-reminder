@@ -1,7 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
-
-const NODE_LAMBDA_LAYER_DIR = `${process.cwd()}/bundle`;
+import { NODE_LAMBDA_LAYER_DIR } from './process/setup';
 
 export class Reminder extends cdk.Construct {
 
