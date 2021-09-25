@@ -1,4 +1,4 @@
-const { App, AwsLambdaReceiver } = require('@slack/bolt');
+import { App, AwsLambdaReceiver, SayArguments } from '@slack/bolt';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
@@ -34,7 +34,7 @@ app.message('hello', async ({ message, say }) => {
       }
     ],
     text: `Hey there <@${message.user}>!`
-  });
+  } as SayArguments);
 });
 
 // Listens for an action from a button click
