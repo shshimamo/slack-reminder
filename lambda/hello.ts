@@ -2,12 +2,12 @@ import { App, AwsLambdaReceiver, SayArguments } from '@slack/bolt';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  signingSecret: process.env.SLACK_SIGNING_SECRET ?? "",
 });
 
 // Initializes your app with your bot token and the AWS Lambda ready receiver
 const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
+  token: process.env.SLACK_BOT_TOKEN ?? "",
   receiver: awsLambdaReceiver,
   processBeforeResponse: true
 });
@@ -21,7 +21,7 @@ app.message('hello', async ({ message, say }) => {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": `Hey there <@${message.user}>!`
+          "text": `Hey there <@${(message as any).user}>!`
         },
         "accessory": {
           "type": "button",
@@ -33,7 +33,7 @@ app.message('hello', async ({ message, say }) => {
         }
       }
     ],
-    text: `Hey there <@${message.user}>!`
+    text: `Hey there <@${(message as any).user}>!`
   } as SayArguments);
 });
 
@@ -48,11 +48,11 @@ app.action('button_click', async ({ body, ack, say }) => {
 // Listens to incoming messages that contain "goodbye"
 app.message('goodbye', async ({ message, say }) => {
   // say() sends a message to the channel where the event was triggered
-  await say(`See ya later, <@${message.user}> :wave:`);
+  await say(`See ya later, <@${(message as any).user}> :wave:`);
 });
 
 // Handle the Lambda function event
-module.exports.handler = async (event, context, callback) => {
+export const handler = async (event: any, context: any, callback: any) => {
   const handler = await awsLambdaReceiver.start();
   return handler(event, context, callback);
 }
