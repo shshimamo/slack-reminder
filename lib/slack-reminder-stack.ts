@@ -17,7 +17,7 @@ export class SlackReminderStack extends cdk.Stack {
 
     const appLambda = new lambda.Function(this, "appLambda", {
       runtime: lambda.Runtime.NODEJS_14_X,
-      code: lambda.Code.fromAsset('lambda'),
+      code: lambda.Code.fromAsset('src/lambda'),
       handler: "hello.handler",
       layers: [nodeModulesLayer],
       environment: {
