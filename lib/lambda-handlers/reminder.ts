@@ -4,8 +4,19 @@ import {
   AwsLambdaReceiver,
   SayArguments,
   LogLevel,
-  HTTPReceiver
+  ReactionAddedEvent,
+  ReactionMessageItem,
+  SlackEvent
 } from '@slack/bolt';
+import { ConversationsHistoryResponse } from "@slack/web-api/dist/response";
+import { Message } from "@slack/web-api/dist/response/ConversationsHistoryResponse";
+import { DynamoDB } from 'aws-sdk';
+
+export const isReactionAddedEvent = (event: SlackEvent):
+  event is ReactionAddedEvent => (event as ReactionAddedEvent).type === 'reaction_added';
+
+const isMessageItem = (item: ReactionAddedEvent['item']):
+  item is ReactionMessageItem => (item as ReactionMessageItem).type === 'message';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
@@ -54,6 +65,65 @@ app.action('button_click', async ({ body, ack, say }) => {
 
   // Acknowledge the action after say() to exit the Lambda process
   await ack();
+});
+
+app.event('reaction_added', async ({ event, client }) => {
+  if (!isReactionAddedEvent(event)) return;
+  if (!isMessageItem(event.item)) return;
+  console.log('event', event)
+
+  if (event.reaction.match(/remind_[0-9]+_[mh]/)) {
+    const channel = event.item.channel
+    const result: ConversationsHistoryResponse = await client.conversations.history({
+      channel: channel,
+      latest: event.item.ts,
+      inclusive: true, // Limit the results to only one
+      limit: 1
+    });
+    // There should only be one result (stored in the zeroth index)
+    const message: Message | undefined = result.messages?.[0];
+    console.log('message:', message);
+    if (!message || !message.text || !message.ts) return;
+
+    const mention_user_names = message.text.match(/@[^\s]+/g);
+    if (!mention_user_names) return;
+
+    // DynamoDB
+    const now = (new Date()).getTime();
+    const dynamo = new DynamoDB();
+    for (const mention_user_name of mention_user_names) {
+      await dynamo
+        .putItem({
+          TableName: "SlackReminder",
+          Item: {
+          // Item: {
+            "MentionedUser": {
+              "S": mention_user_name.slice(1)
+            },
+            "ChannelMessageTs": {
+              "S": `${channel}_${message.ts}`
+            },
+            "LastRemindedAt": {
+              "N": String(now)// 初回も入れておく
+            },
+            "MessageLink": {
+              "S": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${message.ts.replace(/\./g, "")}`
+            },
+            "ReactionUser": {
+              "S": event.user
+            },
+            "IsFinished": {
+              "S": "false"
+            },
+            "IsHurry": {
+              "S": 'false'
+            }
+          }
+        })
+        .promise();
+    }
+  }
+
 });
 
 // Listens to incoming messages that contain "goodbye"
