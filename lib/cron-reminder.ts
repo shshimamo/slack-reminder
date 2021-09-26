@@ -1,7 +1,10 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
+import { Rule, Schedule } from '@aws-cdk/aws-events';
+import { LambdaFunction } from '@aws-cdk/aws-events-targets';
 import { NODE_LAMBDA_LAYER_DIR } from './process/setup';
+import { Duration } from "@aws-cdk/core/lib/duration";
 
 export interface CronReminderProps {
   /** the function for which we want to count url hits **/
@@ -36,5 +39,11 @@ export class CronReminder extends cdk.Construct {
     });
 
     props.table?.grantReadWriteData(this.handler);
+
+    const lambdaFunction = new LambdaFunction(this.handler);
+    new Rule(this, 'ScheduleRule', {
+      schedule: Schedule.rate(Duration.minutes(1)),
+      targets: [lambdaFunction],
+    });
   }
 }
