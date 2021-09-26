@@ -7,7 +7,7 @@ import {
 import { ConversationsHistoryResponse } from "@slack/web-api/dist/response";
 import { Message } from "@slack/web-api/dist/response/ConversationsHistoryResponse";
 import { DynamoDB } from 'aws-sdk';
-import { isReactionAddedEvent, isMessageItem } from '../utils/helpers';
+import { isReactionAddedEvent, isMessageItem } from '../../utils/helpers';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({

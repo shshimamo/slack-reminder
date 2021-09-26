@@ -3,25 +3,19 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import { NODE_LAMBDA_LAYER_DIR } from './process/setup';
 
-export class Reminder extends cdk.Construct {
+export interface CronReminderProps {
+  /** the function for which we want to count url hits **/
+  table: dynamodb.Table;
+}
+
+export class CronReminder extends cdk.Construct {
 
   public readonly handler: lambda.Function;
-  public readonly table: dynamodb.Table;
 
-  constructor(scope: cdk.Construct, id: string) {
+  constructor(scope: cdk.Construct, id: string, props: CronReminderProps) {
     super(scope, id);
 
-    this.table = new dynamodb.Table(this, "SlackReminder", {
-      partitionKey: {
-        name: "MentionedUser",
-        type: dynamodb.AttributeType.STRING
-      },
-      sortKey: {
-        name: "ChannelAndMessageTs",
-        type: dynamodb.AttributeType.STRING
-      }
-    });
-
+    // TODO: layerを分ける
     const nodeModulesLayer = new lambda.LayerVersion(this, 'NodeModulesLayer',
       {
         code: lambda.AssetCode.fromAsset(NODE_LAMBDA_LAYER_DIR),
@@ -31,17 +25,16 @@ export class Reminder extends cdk.Construct {
 
     this.handler = new lambda.Function(this, "appLambda", {
       runtime: lambda.Runtime.NODEJS_14_X,
-      code: lambda.Code.fromAsset('lib/lambda-handlers/reminder'),
-      handler: "reminder.handler",
+      code: lambda.Code.fromAsset('lib/lambda-handlers/cron-reminder'),
+      handler: "cron-reminder.handler",
       layers: [nodeModulesLayer],
       environment: {
         SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN || "",
         SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET || "",
-        SLACK_WORKSPACE: process.env.SLACK_WORKSPACE || "",
-        REMINDER_TABLE_NAME: this.table.tableName
+        REMINDER_TABLE_NAME: props.table?.tableName || ""
       },
     });
 
-    this.table.grantReadWriteData(this.handler);
+    props.table?.grantReadWriteData(this.handler);
   }
 }
