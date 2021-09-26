@@ -7,7 +7,7 @@ import {
 import { ConversationsHistoryResponse } from "@slack/web-api/dist/response";
 import { Message } from "@slack/web-api/dist/response/ConversationsHistoryResponse";
 import { DynamoDB } from 'aws-sdk';
-import { isReactionAddedEvent, isMessageItem } from '../../utils/helpers';
+import { isReactionAddedEvent, isMessageItem } from './helpers';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
@@ -23,14 +23,14 @@ if (process.env.IS_LOCAL === "true") {
   appArgs.receiver = awsLambdaReceiver
   appArgs.processBeforeResponse = true
 }
-let app = new App(appArgs);
+const app = new App(appArgs);
 
 app.event('reaction_added', async ({ event, client }) => {
   if (!isReactionAddedEvent(event)) return;
   if (!isMessageItem(event.item)) return;
   console.log('event', event)
 
-  if (event.reaction.match(/remind_[0-9]+_[mh]/)) {
+  if (event.reaction.match(/.*_[0-9]+_[mh]$/)) {
     const channel = event.item.channel
     const result: ConversationsHistoryResponse = await client.conversations.history({
       channel: channel,
@@ -60,7 +60,7 @@ app.event('reaction_added', async ({ event, client }) => {
             "MessageLink": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${message.ts.replace(/\./g, "")}`,
             "ReactionUser": event.user,
             "IsFinished": "false",
-            "IsHurry": 'false',
+            "Reaction": event.reaction
           }
         })
         .promise()
