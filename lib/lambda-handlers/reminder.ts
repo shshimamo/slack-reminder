@@ -85,7 +85,7 @@ app.event('reaction_added', async ({ event, client }) => {
     console.log('message:', message);
     if (!message || !message.text || !message.ts) return;
 
-    const mention_user_names = message.text.match(/@[^\s]+/g);
+    const mention_user_names = message.text.match(/<@[^\s]+>/g);
     if (!mention_user_names) return;
 
     // DynamoDB
@@ -96,7 +96,7 @@ app.event('reaction_added', async ({ event, client }) => {
         .put({
           TableName: process.env.REMINDER_TABLE_NAME ?? "",
           Item: {
-            "MentionedUser": mention_user_name.slice(1),
+            "MentionedUser": mention_user_name.slice(2, -1),
             "ChannelAndMessageTs": `${channel}_${message.ts}`,
             "LastRemindedAt": now,
             "MessageLink": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${message.ts.replace(/\./g, "")}`,
