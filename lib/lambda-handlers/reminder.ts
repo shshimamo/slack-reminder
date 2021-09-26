@@ -92,15 +92,14 @@ app.event('reaction_added', async ({ event, client }) => {
     const now = (new Date()).getTime();
     const dynamo = new DynamoDB();
     for (const mention_user_name of mention_user_names) {
-      await dynamo
+      dynamo
         .putItem({
-          TableName: "SlackReminder",
+          TableName: process.env.REMINDER_TABLE_NAME ?? "",
           Item: {
-          // Item: {
             "MentionedUser": {
               "S": mention_user_name.slice(1)
             },
-            "ChannelMessageTs": {
+            "ChannelAndMessageTs": {
               "S": `${channel}_${message.ts}`
             },
             "LastRemindedAt": {
@@ -119,8 +118,13 @@ app.event('reaction_added', async ({ event, client }) => {
               "S": 'false'
             }
           }
+        }, function(err, data) {
+          if (err) {
+            console.log("Error", err);
+          } else {
+            console.log("Success", data);
+          }
         })
-        .promise();
     }
   }
 

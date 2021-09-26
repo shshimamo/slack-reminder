@@ -1,5 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import { NODE_LAMBDA_LAYER_DIR } from './process/setup';
 
 export class Reminder extends cdk.Construct {
@@ -8,6 +9,17 @@ export class Reminder extends cdk.Construct {
 
   constructor(scope: cdk.Construct, id: string) {
     super(scope, id);
+
+    const table = new dynamodb.Table(this, "SlackReminder", {
+      partitionKey: {
+        name: "MentionedUser",
+        type: dynamodb.AttributeType.STRING
+      },
+      sortKey: {
+        name: "ChannelAndMessageTs",
+        type: dynamodb.AttributeType.STRING
+      }
+    });
 
     const nodeModulesLayer = new lambda.LayerVersion(this, 'NodeModulesLayer',
       {
@@ -24,8 +36,11 @@ export class Reminder extends cdk.Construct {
       environment: {
         SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN || "",
         SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET || "",
-        SLACK_WORKSPACE: process.env.SLACK_WORKSPACE
+        SLACK_WORKSPACE: process.env.SLACK_WORKSPACE || "",
+        REMINDER_TABLE_NAME: table.tableName
       },
     });
+
+    table.grantReadWriteData(this.handler);
   }
 }
