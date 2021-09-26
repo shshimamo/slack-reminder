@@ -10,7 +10,7 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "cdk deploy  --require-approval never",
-    "dev": "IS_LOCAL=true ts-node src/lambda/handlers/app.ts"
+    "dev": "IS_LOCAL=true ts-node-dev lib/lambda-handlers/reminder.ts"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.124.0",
@@ -21,7 +21,7 @@
     "fs-extra": "^10.0.0",
     "jest": "^26.4.2",
     "ts-jest": "^26.2.0",
-    "ts-node": "^9.0.0",
+    "ts-node-dev": "^1.1.8",
     "typescript": "~3.9.7"
   },
   "dependencies": {

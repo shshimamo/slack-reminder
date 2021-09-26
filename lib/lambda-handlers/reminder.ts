@@ -1,4 +1,11 @@
-import { App, AwsLambdaReceiver, SayArguments } from '@slack/bolt';
+import {
+  App,
+  AppOptions,
+  AwsLambdaReceiver,
+  SayArguments,
+  LogLevel,
+  HTTPReceiver
+} from '@slack/bolt';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
@@ -6,11 +13,15 @@ const awsLambdaReceiver = new AwsLambdaReceiver({
 });
 
 // Initializes your app with your bot token and the AWS Lambda ready receiver
-const app = new App({
-  token: process.env.SLACK_BOT_TOKEN ?? "",
-  receiver: awsLambdaReceiver,
-  processBeforeResponse: true
-});
+const appArgs: AppOptions = { token: process.env.SLACK_BOT_TOKEN ?? "" };
+if (process.env.IS_LOCAL === "true") {
+  appArgs.signingSecret = process.env.SLACK_SIGNING_SECRET
+  appArgs.logLevel = LogLevel.DEBUG
+} else {
+  appArgs.receiver = awsLambdaReceiver
+  appArgs.processBeforeResponse = true
+}
+let app = new App(appArgs);
 
 // Listens to incoming messages that contain "hello"
 app.message('hello', async ({ message, say }) => {
@@ -55,4 +66,14 @@ app.message('goodbye', async ({ message, say }) => {
 export const handler = async (event: any, context: any, callback: any) => {
   const handler = await awsLambdaReceiver.start();
   return handler(event, context, callback);
+}
+
+if (process.env.IS_LOCAL === "true") {
+  (async () => {
+    // Start your app
+
+    await app.start(3000);
+
+    console.log('⚡️ Bolt app is running!');
+  })();
 }
