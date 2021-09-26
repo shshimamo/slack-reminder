@@ -2,21 +2,12 @@ import {
   App,
   AppOptions,
   AwsLambdaReceiver,
-  SayArguments,
   LogLevel,
-  ReactionAddedEvent,
-  ReactionMessageItem,
-  SlackEvent
 } from '@slack/bolt';
 import { ConversationsHistoryResponse } from "@slack/web-api/dist/response";
 import { Message } from "@slack/web-api/dist/response/ConversationsHistoryResponse";
 import { DynamoDB } from 'aws-sdk';
-
-export const isReactionAddedEvent = (event: SlackEvent):
-  event is ReactionAddedEvent => (event as ReactionAddedEvent).type === 'reaction_added';
-
-const isMessageItem = (item: ReactionAddedEvent['item']):
-  item is ReactionMessageItem => (item as ReactionMessageItem).type === 'message';
+import { isReactionAddedEvent, isMessageItem } from '../utils/helpers';
 
 // Initialize your custom receiver
 const awsLambdaReceiver = new AwsLambdaReceiver({
@@ -33,39 +24,6 @@ if (process.env.IS_LOCAL === "true") {
   appArgs.processBeforeResponse = true
 }
 let app = new App(appArgs);
-
-// Listens to incoming messages that contain "hello"
-app.message('hello', async ({ message, say }) => {
-  // say() sends a message to the channel where the event was triggered
-  await say({
-    blocks: [
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `Hey there <@${(message as any).user}>!`
-        },
-        "accessory": {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "text": "Click Me"
-          },
-          "action_id": "button_click"
-        }
-      }
-    ],
-    text: `Hey there <@${(message as any).user}>!`
-  } as SayArguments);
-});
-
-// Listens for an action from a button click
-app.action('button_click', async ({ body, ack, say }) => {
-  await say(`<@${body.user.id}> clicked the button`);
-
-  // Acknowledge the action after say() to exit the Lambda process
-  await ack();
-});
 
 app.event('reaction_added', async ({ event, client }) => {
   if (!isReactionAddedEvent(event)) return;
@@ -108,7 +66,6 @@ app.event('reaction_added', async ({ event, client }) => {
         .promise()
     }
   }
-
 });
 
 // Listens to incoming messages that contain "goodbye"
