@@ -22,6 +22,14 @@ export class Reminder extends cdk.Construct {
       }
     });
 
+    this.table.addGlobalSecondaryIndex({
+      indexName: "IsFinished_index",
+      partitionKey: {
+        name: "IsFinished",
+        type: dynamodb.AttributeType.STRING
+      }
+    });
+
     const nodeModulesLayer = new lambda.LayerVersion(this, 'NodeModulesLayer',
       {
         code: lambda.AssetCode.fromAsset(NODE_LAMBDA_LAYER_DIR),

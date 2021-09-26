@@ -14,10 +14,11 @@ export const handler = async (event: any, context: any) => {
   try {
     const res = await dynamo.query({
       ExpressionAttributeValues: {
-        ':mun': 'UQLE60H1C' // TODO: IsFinished にインデックス貼って IsFinished: false だけ取得
+        ':if': "false"
       },
-      KeyConditionExpression: 'MentionedUser = :mun',
-      TableName: process.env.REMINDER_TABLE_NAME ?? ""
+      KeyConditionExpression: 'IsFinished = :if',
+      TableName: process.env.REMINDER_TABLE_NAME ?? "",
+      IndexName: 'IsFinished_index'
     }).promise();
 
     if (!res?.Items || !Array.isArray(res.Items)) {
