@@ -61,9 +61,9 @@ export const handler = async (event: any, context: any) => {
 };
 
 const interval = (reaction: string) => {
-  if (reaction.match(/.*_[0-9]+_m$/)) {
+  if (reaction.match(/.*remind_[0-9]+_m$/)) {
     return Number(reaction.split('_').slice(-2)[0]) * 60 * 1000
-  } else if (reaction.match(/.*_[0-9]+_h$/)) {
+  } else if (reaction.match(/.*remind_[0-9]+_h$/)) {
     return Number(reaction.split('_').slice(-2)[0]) * 60 * 60 * 1000
   } else {
     return 12 * 60 * 60 * 1000
@@ -71,9 +71,9 @@ const interval = (reaction: string) => {
 }
 
 const humanInterval = (reaction: string) => {
-  if (reaction.match(/.*_[0-9]+_m$/)) {
+  if (reaction.match(/.*remind_[0-9]+_m$/)) {
     return `${(reaction.split('_').slice(-2)[0])}分`
-  } else if (reaction.match(/.*_[0-9]+_h$/)) {
+  } else if (reaction.match(/.*remind_[0-9]+_h$/)) {
     return `${(reaction.split('_').slice(-2)[0])}時間`
   } else {
     return '12時間'

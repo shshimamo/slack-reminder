@@ -35,7 +35,7 @@ app.event('reaction_added', async ({ event, client }) => {
 
   const channel = event.item.channel
   const dynamo = new DynamoDB.DocumentClient();
-  if (event.reaction.match(/.*_[0-9]+_[mh]$/)) {
+  if (event.reaction.match(/.*remind_[0-9]+_[mh]$/)) {
     const result: ConversationsHistoryResponse = await client.conversations.history({
       channel: channel,
       latest: event.item.ts,
@@ -67,7 +67,7 @@ app.event('reaction_added', async ({ event, client }) => {
         })
         .promise()
     }
-  } else if (event.reaction.match(/finish_reminder/)) {
+  } else if (event.reaction.match(/remind_finish/)) {
     // when finish reaction added
     const result: ConversationsHistoryResponse = await client.conversations.history({
       channel: channel,
@@ -95,7 +95,7 @@ app.event('reaction_removed', async ({ event, client }) => {
   if (!isReactionRemovedEvent(event)) return;
   if (!isMessageItem(event.item)) return;
 
-  if (event.reaction.match(/.*_[0-9]+_[mh]$/)) {
+  if (event.reaction.match(/.*remind_[0-9]+_[mh]$/)) {
     const channel = event.item.channel
     const result: ConversationsHistoryResponse = await client.conversations.history({
       channel: channel,
