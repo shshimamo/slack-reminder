@@ -90,41 +90,22 @@ app.event('reaction_added', async ({ event, client }) => {
 
     // DynamoDB
     const now = (new Date()).getTime();
-    const dynamo = new DynamoDB();
+    const dynamo = new DynamoDB.DocumentClient();
     for (const mention_user_name of mention_user_names) {
-      dynamo
-        .putItem({
+      await dynamo
+        .put({
           TableName: process.env.REMINDER_TABLE_NAME ?? "",
           Item: {
-            "MentionedUser": {
-              "S": mention_user_name.slice(1)
-            },
-            "ChannelAndMessageTs": {
-              "S": `${channel}_${message.ts}`
-            },
-            "LastRemindedAt": {
-              "N": String(now)// 初回も入れておく
-            },
-            "MessageLink": {
-              "S": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${message.ts.replace(/\./g, "")}`
-            },
-            "ReactionUser": {
-              "S": event.user
-            },
-            "IsFinished": {
-              "S": "false"
-            },
-            "IsHurry": {
-              "S": 'false'
-            }
-          }
-        }, function(err, data) {
-          if (err) {
-            console.log("Error", err);
-          } else {
-            console.log("Success", data);
+            "MentionedUser": mention_user_name.slice(1),
+            "ChannelAndMessageTs": `${channel}_${message.ts}`,
+            "LastRemindedAt": now,
+            "MessageLink": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${message.ts.replace(/\./g, "")}`,
+            "ReactionUser": event.user,
+            "IsFinished": "false",
+            "IsHurry": 'false',
           }
         })
+        .promise()
     }
   }
 
