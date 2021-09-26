@@ -33,8 +33,9 @@ app.event('reaction_added', async ({ event, client }) => {
   if (!isReactionAddedEvent(event)) return;
   if (!isMessageItem(event.item)) return;
 
+  const channel = event.item.channel
+  const dynamo = new DynamoDB.DocumentClient();
   if (event.reaction.match(/.*_[0-9]+_[mh]$/)) {
-    const channel = event.item.channel
     const result: ConversationsHistoryResponse = await client.conversations.history({
       channel: channel,
       latest: event.item.ts,
@@ -43,23 +44,22 @@ app.event('reaction_added', async ({ event, client }) => {
     });
     // There should only be one result (stored in the zeroth index)
     const message: Message | undefined = result.messages?.[0];
-    if (!message || !message.text || !message.ts) return;
+    if (!message || !message.text) return;
 
     const mention_user_names = message.text.match(/<@[^\s]+>/g);
     if (!mention_user_names) return;
 
     // DynamoDB
     const now = (new Date()).getTime();
-    const dynamo = new DynamoDB.DocumentClient();
     for (const mention_user_name of mention_user_names) {
       await dynamo
         .put({
           TableName: process.env.REMINDER_TABLE_NAME ?? "",
           Item: {
             "MentionedUser": mention_user_name.slice(2, -1),
-            "ChannelAndMessageTs": `${channel}_${message.ts}`,
+            "ChannelAndMessageTs": `${channel}_${event.item.ts}`,
             "LastRemindedAt": now,
-            "MessageLink": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${message.ts.replace(/\./g, "")}`,
+            "MessageLink": `https://${process.env.SLACK_WORKSPACE}.slack.com/archives/${channel}/p${event.item.ts.replace(/\./g, "")}`,
             "ReactionUser": event.user,
             "IsFinished": "false",
             "Reaction": event.reaction
@@ -67,6 +67,27 @@ app.event('reaction_added', async ({ event, client }) => {
         })
         .promise()
     }
+  } else if (event.reaction.match(/finish_reminder/)) {
+    // when finish reaction added
+    const result: ConversationsHistoryResponse = await client.conversations.history({
+      channel: channel,
+      latest: event.item.ts,
+      inclusive: true, // Limit the results to only one
+      limit: 1
+    });
+
+    await dynamo.update({
+      TableName: process.env.REMINDER_TABLE_NAME ?? "",
+      Key: {
+        "MentionedUser": event.user,
+        "ChannelAndMessageTs": `${channel}_${event.item.ts}`
+      },
+      UpdateExpression: "set IsFinished = :if",
+      ExpressionAttributeValues: {
+        ":if": "true"
+      },
+      ReturnValues: "UPDATED_NEW"
+    }).promise();
   }
 });
 
